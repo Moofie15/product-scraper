@@ -1,15 +1,10 @@
 """
 SKU HARVESTER
 =============
-Professional web scraping tool for e-commerce product data extraction
+Industrial-Grade Product Data Extraction Platform
 
-Features:
-- Single URL & Bulk scraping
-- Multi-website support
-- Email notifications (demo)
-- Beautiful modern UI
-- Progress tracking
-- Data export
+A professional tool for extracting, processing, and analyzing
+e-commerce product data at scale.
 """
 
 import streamlit as st
@@ -24,171 +19,293 @@ import json
 
 st.set_page_config(
     page_title="SKU Harvester",
-    page_icon="🌾",
+    page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ============================================================================
-# CUSTOM CSS - MODERN DESIGN
+# CUSTOM CSS - INDUSTRIAL-TECH HYBRID DESIGN
 # ============================================================================
 
 st.markdown("""
 <style>
-    /* Main Theme */
-    :root {
-        --primary-color: #2E7D32;
-        --secondary-color: #66BB6A;
-        --accent-color: #FFA726;
-        --background: #F5F7FA;
+    /* Global Styling */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Header Styling */
+    /* Main Header - Industrial Tech Style */
     .main-header {
-        font-size: 3.5rem;
+        font-size: 3rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #2E7D32 0%, #66BB6A 100%);
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 0.5rem;
-        letter-spacing: -1px;
+        margin-bottom: 0.3rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
     }
     
     .sub-header {
         text-align: center;
-        color: #5F6368;
-        font-size: 1.1rem;
+        color: #546e7a;
+        font-size: 1rem;
         margin-bottom: 2rem;
-        font-weight: 400;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     
-    /* Card Styling */
+    /* Industrial Stat Cards */
     .stat-card {
-        background: white;
+        background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
         padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        text-align: center;
-        border-left: 4px solid #2E7D32;
-        transition: transform 0.2s;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #1976d2;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, transparent 100%);
+        border-radius: 0 8px 0 100%;
     }
     
     .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+        border-left-color: #ff6f00;
     }
     
     .stat-number {
         font-size: 2.5rem;
-        font-weight: 700;
-        color: #2E7D32;
+        font-weight: 800;
+        background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin: 0;
+        line-height: 1;
     }
     
     .stat-label {
-        color: #5F6368;
-        font-size: 0.9rem;
+        color: #546e7a;
+        font-size: 0.75rem;
         margin-top: 0.5rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
+        font-weight: 600;
     }
     
-    /* Button Styling */
+    /* Action Buttons - Industrial Style */
     .stButton>button {
         width: 100%;
-        background: linear-gradient(135deg, #2E7D32 0%, #66BB6A 100%);
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
         color: white;
-        font-size: 1.2rem;
-        font-weight: 600;
-        padding: 0.75rem 2rem;
-        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 0.8rem 1.5rem;
+        border-radius: 6px;
         border: none;
-        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+        box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
         transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     
     .stButton>button:hover {
+        background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+        box-shadow: 0 4px 16px rgba(25, 118, 210, 0.4);
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
-        background: linear-gradient(135deg, #1B5E20 0%, #4CAF50 100%);
     }
     
-    /* Section Styling */
+    /* Primary Action Button */
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, #ff6f00 0%, #f57c00 100%);
+        box-shadow: 0 2px 8px rgba(255, 111, 0, 0.3);
+    }
+    
+    .stButton>button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+        box-shadow: 0 4px 16px rgba(255, 111, 0, 0.4);
+    }
+    
+    /* Section Headers */
     .section-header {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        color: #2E7D32;
+        color: #1565c0;
         margin: 2rem 0 1rem 0;
-        padding-bottom: 0.5rem;
-        border-bottom: 3px solid #66BB6A;
+        padding: 0.5rem 0;
+        border-bottom: 2px solid #e3f2fd;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
     
-    /* Info Boxes */
+    /* Info Boxes - Tech Style */
     .info-box {
-        background: #E8F5E9;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
         padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #4CAF50;
+        border-radius: 6px;
+        border-left: 4px solid #1976d2;
         margin: 1rem 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .warning-box {
-        background: #FFF3E0;
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
         padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #FF9800;
+        border-radius: 6px;
+        border-left: 4px solid #ff6f00;
         margin: 1rem 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .success-box {
-        background: #E8F5E9;
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
         padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #4CAF50;
+        border-radius: 6px;
+        border-left: 4px solid #43a047;
         margin: 1rem 0;
-        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+        box-shadow: 0 2px 8px rgba(67, 160, 71, 0.2);
     }
     
-    /* Tooltip Styling */
+    /* Tooltip Text */
     .tooltip-text {
-        font-size: 0.85rem;
-        color: #757575;
+        font-size: 0.8rem;
+        color: #78909c;
         font-style: italic;
         margin-top: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
     }
     
-    /* Upload Section */
+    /* Upload Section - Industrial Box */
     .upload-section {
         background: white;
         padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         margin: 1.5rem 0;
+        border: 1px solid #e0e0e0;
     }
     
-    /* Sidebar Styling */
+    /* Sidebar - Tech Industrial */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #E8F5E9 0%, #F1F8E9 100%);
+        background: linear-gradient(180deg, #eceff1 0%, #cfd8dc 100%);
+        border-right: 2px solid #90a4ae;
+    }
+    
+    [data-testid="stSidebar"] h3 {
+        color: #263238;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.9rem;
+    }
+    
+    /* Website Chips */
+    .website-chip {
+        display: inline-block;
+        background: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        margin: 0.3rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e0e0e0;
+        transition: all 0.2s;
+    }
+    
+    .website-chip:hover {
+        box-shadow: 0 2px 6px rgba(25, 118, 210, 0.2);
+        border-color: #1976d2;
+        transform: translateY(-1px);
+    }
+    
+    /* Data Table Styling */
+    .dataframe {
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 6px !important;
+        overflow: hidden !important;
+    }
+    
+    /* Progress Bar - Industrial */
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #1976d2, #ff6f00) !important;
     }
     
     /* Divider */
     hr {
         margin: 2rem 0;
         border: none;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #66BB6A, transparent);
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #90a4ae, transparent);
     }
     
-    /* Data Table */
-    .dataframe {
+    /* Mode Selection Cards */
+    .mode-card {
+        background: white;
+        padding: 1.5rem;
         border-radius: 8px;
-        overflow: hidden;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid #e0e0e0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
-    /* Progress Bar */
-    .stProgress > div > div > div {
-        background: linear-gradient(90deg, #2E7D32, #66BB6A);
+    .mode-card:hover {
+        border-color: #1976d2;
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    .mode-icon {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .mode-title {
+        font-weight: 700;
+        color: #263238;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Metric Cards */
+    [data-testid="stMetricValue"] {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1565c0;
+    }
+    
+    /* Tab Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -203,46 +320,55 @@ if 'success_rate' not in st.session_state:
     st.session_state.success_rate = 0
 if 'jobs_completed' not in st.session_state:
     st.session_state.jobs_completed = 0
+if 'scraping_mode' not in st.session_state:
+    st.session_state.scraping_mode = 'single'
 
 # ============================================================================
-# SUPPORTED WEBSITES
+# SUPPORTED WEBSITES DATABASE
 # ============================================================================
 
 SUPPORTED_WEBSITES = {
     "Amazon India": {
         "icon": "🛒",
         "color": "#FF9900",
-        "pattern": "amazon.in"
+        "pattern": "amazon.in",
+        "category": "Marketplace"
     },
     "Flipkart": {
         "icon": "🏪",
         "color": "#2874F0",
-        "pattern": "flipkart.com"
+        "pattern": "flipkart.com",
+        "category": "Marketplace"
     },
     "IndiaMART": {
         "icon": "🏭",
         "color": "#4CAF50",
-        "pattern": "indiamart.com"
+        "pattern": "indiamart.com",
+        "category": "B2B"
     },
     "IndustryBuying": {
         "icon": "🔧",
         "color": "#E91E63",
-        "pattern": "industrybuying.com"
+        "pattern": "industrybuying.com",
+        "category": "Industrial"
     },
     "Moglix": {
         "icon": "⚙️",
         "color": "#FF5722",
-        "pattern": "moglix.com"
+        "pattern": "moglix.com",
+        "category": "Industrial"
     },
     "SKF India": {
         "icon": "⚡",
         "color": "#1565C0",
-        "pattern": "skf.com"
+        "pattern": "skf.com",
+        "category": "Technical"
     },
     "SMC Pneumatics": {
         "icon": "🔩",
         "color": "#43A047",
-        "pattern": "smcpneumatics.com"
+        "pattern": "smcpneumatics.com",
+        "category": "Technical"
     }
 }
 
@@ -262,64 +388,73 @@ def validate_bulk_upload(df):
     """Validate uploaded file structure"""
     required_columns = ['RefNo', 'SKUSource', 'SKU Link']
     
-    # Check if all required columns exist
     missing_cols = [col for col in required_columns if col not in df.columns]
     
     if missing_cols:
-        return False, f"Missing columns: {', '.join(missing_cols)}"
+        return False, f"❌ Missing required columns: {', '.join(missing_cols)}"
     
-    # Check for empty values
     for col in required_columns:
         if df[col].isnull().any():
-            return False, f"Column '{col}' contains empty values"
+            return False, f"❌ Column '{col}' contains empty values"
     
-    return True, "File structure is valid"
+    return True, "✅ File structure validated successfully"
 
 def scrape_product_demo(url, website):
-    """Demo scraping function - returns placeholder data"""
-    time.sleep(0.5)  # Simulate scraping delay
+    """Demo scraping function"""
+    time.sleep(0.3)
     
-    # Demo data based on website
-    demo_data = {
+    demo_products = {
         "Amazon India": {
-            "product_name": "Industrial Ball Bearing Set",
+            "product_name": "SKF Deep Groove Ball Bearing 6205",
             "brand": "SKF",
             "price": "₹1,250.00",
+            "availability": "In Stock",
             "specs": {
+                "Inner Diameter": "25 mm",
+                "Outer Diameter": "52 mm",
+                "Width": "15 mm",
                 "Material": "Chrome Steel",
-                "Inner Diameter": "25mm",
-                "Outer Diameter": "52mm",
-                "Weight": "0.15kg"
+                "Seal Type": "Open",
+                "Weight": "0.13 kg",
+                "Load Rating": "7800 N"
             }
         },
         "Flipkart": {
-            "product_name": "Premium Pneumatic Cylinder",
-            "brand": "SMC",
+            "product_name": "SMC Pneumatic Cylinder CDQ2B32-50D",
+            "brand": "SMC Corporation",
             "price": "₹2,850.00",
+            "availability": "In Stock",
             "specs": {
-                "Bore Size": "32mm",
-                "Stroke Length": "50mm",
+                "Bore Size": "32 mm",
+                "Stroke Length": "50 mm",
                 "Operating Pressure": "1.0 MPa",
-                "Material": "Aluminum"
+                "Material": "Aluminum Alloy",
+                "Port Size": "M5",
+                "Weight": "0.45 kg",
+                "Mount Type": "Basic"
             }
         },
         "Default": {
-            "product_name": "Industrial Component",
+            "product_name": "Industrial Component - Standard Grade",
             "brand": "Generic",
             "price": "₹999.00",
+            "availability": "In Stock",
             "specs": {
-                "Type": "Standard",
-                "Material": "Steel",
-                "Grade": "Industrial"
+                "Type": "Standard Industrial",
+                "Material": "Steel/Aluminum",
+                "Grade": "Industrial",
+                "Weight": "0.5 kg"
             }
         }
     }
     
-    data = demo_data.get(website, demo_data["Default"])
-    data['url'] = url
-    data['website'] = website
-    data['scraped_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    data['status'] = 'Success'
+    data = demo_products.get(website, demo_products["Default"])
+    data.update({
+        'url': url,
+        'website': website,
+        'scraped_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'status': '✅ Success'
+    })
     
     return data
 
@@ -327,95 +462,108 @@ def scrape_product_demo(url, website):
 # HEADER
 # ============================================================================
 
-st.markdown('<h1 class="main-header">🌾 SKU HARVESTER</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Professional E-Commerce Data Extraction Platform</p>', unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.markdown('<h1 class="main-header">⚙️ SKU HARVESTER</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Industrial-Grade Data Extraction Platform</p>', unsafe_allow_html=True)
 
 # ============================================================================
-# SIDEBAR - SETTINGS & INFO
+# SIDEBAR - CONTROL PANEL
 # ============================================================================
 
 with st.sidebar:
-    st.markdown("### ⚙️ Settings")
-    
+    st.markdown("### ⚙️ CONTROL PANEL")
     st.markdown("---")
     
-    # Website Selection
-    st.markdown("#### 🌐 Supported Websites")
-    
-    for website, info in SUPPORTED_WEBSITES.items():
-        st.markdown(f"{info['icon']} **{website}**")
-    
-    st.markdown("---")
-    
-    # Quick Stats
-    st.markdown("#### 📊 Quick Stats")
+    # System Status
+    st.markdown("#### 🔌 SYSTEM STATUS")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Total SKUs", st.session_state.total_scraped)
+        st.markdown("**Status:**")
+        st.success("🟢 ONLINE")
     with col2:
-        st.metric("Jobs", st.session_state.jobs_completed)
+        st.markdown("**Mode:**")
+        st.info("📊 DEMO")
     
     st.markdown("---")
     
-    # Help Section
-    with st.expander("ℹ️ How to Use"):
+    # Supported Platforms
+    st.markdown("#### 🌐 SUPPORTED PLATFORMS")
+    
+    categories = {}
+    for website, info in SUPPORTED_WEBSITES.items():
+        category = info['category']
+        if category not in categories:
+            categories[category] = []
+        categories[category].append((website, info['icon']))
+    
+    for category, sites in categories.items():
+        with st.expander(f"📁 {category}"):
+            for site, icon in sites:
+                st.markdown(f"{icon} **{site}**")
+    
+    st.markdown("---")
+    
+    # Performance Metrics
+    st.markdown("#### 📊 PERFORMANCE")
+    st.metric("Total Extracted", st.session_state.total_scraped, delta=None)
+    st.metric("Jobs Completed", st.session_state.jobs_completed, delta=None)
+    st.metric("Success Rate", f"{st.session_state.success_rate}%", delta=None)
+    
+    st.markdown("---")
+    
+    # Documentation
+    with st.expander("📖 DOCUMENTATION"):
         st.markdown("""
-        **Single URL Mode:**
-        1. Select website
-        2. Paste product URL
-        3. Click Scrape
-        
-        **Bulk Mode:**
-        1. Download template
-        2. Fill with your data
-        3. Upload file
-        4. Click Scrape All
+        **Quick Start:**
+        1. Select extraction mode
+        2. Input data source
+        3. Configure parameters
+        4. Execute extraction
         
         **File Format:**
-        - Column 1: RefNo
-        - Column 2: SKUSource
-        - Column 3: SKU Link
+        - RefNo: Reference ID
+        - SKUSource: Platform name
+        - SKU Link: Product URL
         """)
     
-    with st.expander("🆘 Support"):
+    with st.expander("🛠️ SUPPORT"):
         st.markdown("""
-        **Need Help?**
-        
-        Contact: support@skuharvester.com
-        
-        Documentation: [View Docs](#)
+        **Technical Support:**
+        📧 support@skuharvester.tech
+        📞 +91-XXXX-XXXXXX
+        🌐 docs.skuharvester.tech
         """)
 
 # ============================================================================
-# MAIN DASHBOARD
+# DASHBOARD
 # ============================================================================
 
-st.markdown('<p class="section-header">📊 Dashboard</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-header">📊 SYSTEM DASHBOARD</p>', unsafe_allow_html=True)
 
-# Dashboard Stats
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.markdown("""
     <div class="stat-card">
-        <p class="stat-number">0</p>
-        <p class="stat-label">Total SKUs Scraped</p>
+        <p class="stat-number">""" + str(st.session_state.total_scraped) + """</p>
+        <p class="stat-label">📦 TOTAL EXTRACTIONS</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown("""
     <div class="stat-card">
-        <p class="stat-number">0%</p>
-        <p class="stat-label">Success Rate</p>
+        <p class="stat-number">""" + str(st.session_state.success_rate) + """%</p>
+        <p class="stat-label">✅ SUCCESS RATE</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
     st.markdown("""
     <div class="stat-card">
-        <p class="stat-number">0</p>
-        <p class="stat-label">Jobs Today</p>
+        <p class="stat-number">""" + str(st.session_state.jobs_completed) + """</p>
+        <p class="stat-label">⚡ JOBS EXECUTED</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -423,37 +571,29 @@ with col4:
     st.markdown("""
     <div class="stat-card">
         <p class="stat-number">7</p>
-        <p class="stat-label">Websites Supported</p>
+        <p class="stat-label">🌐 PLATFORMS ACTIVE</p>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============================================================================
-# SCRAPING MODE SELECTION
+# MODE SELECTION
 # ============================================================================
 
-st.markdown('<p class="section-header">🚀 New Scraping Job</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-header">🔧 EXTRACTION MODE</p>', unsafe_allow_html=True)
 
-# Mode Selection with Icons
 col1, col2 = st.columns(2)
 
 with col1:
-    single_mode = st.button("🔍 Single URL Scraping", use_container_width=True)
-    st.markdown('<p class="tooltip-text">Extract data from one product URL at a time</p>', unsafe_allow_html=True)
+    if st.button("🎯 SINGLE URL EXTRACTION", use_container_width=True):
+        st.session_state.scraping_mode = 'single'
+    st.markdown('<p class="tooltip-text">💡 Extract data from individual product URL</p>', unsafe_allow_html=True)
 
 with col2:
-    bulk_mode = st.button("📁 Bulk Upload Scraping", use_container_width=True)
-    st.markdown('<p class="tooltip-text">Upload CSV/Excel file with multiple URLs</p>', unsafe_allow_html=True)
-
-# Set mode based on button clicks
-if 'scraping_mode' not in st.session_state:
-    st.session_state.scraping_mode = 'single'
-
-if single_mode:
-    st.session_state.scraping_mode = 'single'
-if bulk_mode:
-    st.session_state.scraping_mode = 'bulk'
+    if st.button("📦 BATCH PROCESSING", use_container_width=True):
+        st.session_state.scraping_mode = 'bulk'
+    st.markdown('<p class="tooltip-text">💡 Process multiple URLs from uploaded file</p>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -463,139 +603,151 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 if st.session_state.scraping_mode == 'single':
     
-    st.markdown("### 🔍 Single URL Scraping")
+    st.markdown('<p class="section-header">🎯 SINGLE URL EXTRACTION</p>', unsafe_allow_html=True)
     
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     
-    # Website Selection
-    col1, col2 = st.columns([2, 1])
+    # Platform Selection
+    col1, col2 = st.columns([3, 1])
     
     with col1:
         selected_website = st.selectbox(
-            "🌐 Select Website",
+            "🌐 TARGET PLATFORM",
             list(SUPPORTED_WEBSITES.keys()),
-            help="Choose the e-commerce platform"
+            help="Select the e-commerce platform"
         )
-        st.markdown('<p class="tooltip-text">Select the website source</p>', unsafe_allow_html=True)
+        st.markdown('<p class="tooltip-text">💡 Choose the source platform for extraction</p>', unsafe_allow_html=True)
     
     with col2:
-        website_icon = SUPPORTED_WEBSITES[selected_website]['icon']
-        st.markdown(f"<h1 style='text-align: center; font-size: 4rem;'>{website_icon}</h1>", unsafe_allow_html=True)
+        icon = SUPPORTED_WEBSITES[selected_website]['icon']
+        st.markdown(f"<div style='text-align: center; font-size: 4rem; padding-top: 0.5rem;'>{icon}</div>", unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # URL Input
     product_url = st.text_input(
-        "🔗 Product URL",
-        placeholder=f"Paste {selected_website} product URL here...",
-        help="Full product page URL"
+        "🔗 PRODUCT URL",
+        placeholder=f"Enter {selected_website} product URL...",
+        help="Full product page URL including https://"
     )
-    st.markdown('<p class="tooltip-text">Enter the complete product page link</p>', unsafe_allow_html=True)
+    st.markdown('<p class="tooltip-text">💡 Paste the complete product page link</p>', unsafe_allow_html=True)
     
-    # Email Section
-    st.markdown("#### 📧 Email Results (Optional)")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Email Configuration
+    st.markdown("#### 📧 NOTIFICATION SETTINGS (Optional)")
     col1, col2 = st.columns(2)
     
     with col1:
         email_from = st.text_input(
-            "From Email",
-            placeholder="sender@example.com",
-            help="Sender email address"
+            "Sender Address",
+            placeholder="sender@company.com",
+            help="Email sender address"
         )
     
     with col2:
         email_to = st.text_input(
-            "To Email",
-            placeholder="recipient@example.com",
-            help="Recipient email address"
+            "Recipient Address",
+            placeholder="recipient@company.com",
+            help="Email recipient address"
         )
     
-    st.markdown('<p class="tooltip-text">Email results will be sent after scraping completes</p>', unsafe_allow_html=True)
+    st.markdown('<p class="tooltip-text">💡 Results will be emailed after extraction (Demo Mode)</p>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Scrape Button
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Execute Button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        scrape_btn = st.button("🚀 START SCRAPING", use_container_width=True, type="primary")
+        execute_btn = st.button("⚡ EXECUTE EXTRACTION", use_container_width=True, type="primary")
     
-    # Scraping Logic
-    if scrape_btn:
+    if execute_btn:
         if not product_url:
-            st.error("❌ Please enter a product URL")
+            st.error("❌ ERROR: Product URL required")
         else:
-            # Progress
-            with st.spinner(f'🔄 Scraping from {selected_website}...'):
+            with st.spinner(f'⚙️ Executing extraction from {selected_website}...'):
                 progress_bar = st.progress(0)
-                status_text = st.empty()
+                status = st.empty()
                 
-                # Simulate scraping steps
                 steps = [
-                    "Connecting to website...",
-                    "Loading page...",
-                    "Extracting product data...",
-                    "Parsing specifications...",
-                    "Collecting price information...",
-                    "Finalizing data..."
+                    "Initializing connection...",
+                    "Establishing secure link...",
+                    "Loading product data...",
+                    "Extracting specifications...",
+                    "Processing price information...",
+                    "Validating data integrity...",
+                    "Finalizing extraction..."
                 ]
                 
                 for i, step in enumerate(steps):
-                    status_text.text(f"⏳ {step}")
+                    status.text(f"⚙️ {step}")
                     progress_bar.progress((i + 1) / len(steps))
-                    time.sleep(0.3)
+                    time.sleep(0.2)
                 
-                # Get data
                 product_data = scrape_product_demo(product_url, selected_website)
-                
-                # Update session state
                 st.session_state.total_scraped += 1
                 st.session_state.jobs_completed += 1
+                st.session_state.success_rate = 100
             
-            # Success message
-            st.markdown('<div class="success-box">✅ <b>Product Successfully Scraped!</b></div>', unsafe_allow_html=True)
+            st.markdown('<div class="success-box"><b>✅ EXTRACTION COMPLETE</b><br>Product data successfully extracted and validated</div>', unsafe_allow_html=True)
             
-            # Display Results
             st.markdown("---")
-            st.markdown("### 📦 Product Information")
+            
+            # Results Display
+            st.markdown("### 📋 EXTRACTION RESULTS")
             
             col1, col2 = st.columns([2, 1])
             
             with col1:
-                st.markdown(f"**Product Name:** {product_data['product_name']}")
+                st.markdown("#### 📦 PRODUCT INFORMATION")
+                st.markdown(f"**Name:** {product_data['product_name']}")
                 st.markdown(f"**Brand:** {product_data['brand']}")
-                st.markdown(f"**Website:** {product_data['website']}")
-                st.markdown(f"**Scraped At:** {product_data['scraped_at']}")
+                st.markdown(f"**Platform:** {product_data['website']}")
+                st.markdown(f"**Availability:** {product_data['availability']}")
+                st.markdown(f"**Extracted:** {product_data['scraped_at']}")
+                st.markdown(f"**Status:** {product_data['status']}")
             
             with col2:
-                st.markdown("### 💰 Price")
-                st.markdown(f"<h2 style='color: #2E7D32;'>{product_data['price']}</h2>", unsafe_allow_html=True)
-                st.markdown("**Status:** ✅ In Stock")
+                st.markdown("#### 💰 PRICING DATA")
+                st.markdown(f"<h1 style='color: #1565c0; font-weight: 800;'>{product_data['price']}</h1>", unsafe_allow_html=True)
+                st.success("✅ Price Verified")
             
-            # Specifications
             st.markdown("---")
-            st.markdown("### 📋 Specifications")
+            
+            # Specifications Table
+            st.markdown("### 🔧 TECHNICAL SPECIFICATIONS")
             
             specs_df = pd.DataFrame(
                 list(product_data['specs'].items()),
-                columns=['Specification', 'Value']
+                columns=['Parameter', 'Value']
             )
             
             st.dataframe(specs_df, use_container_width=True, hide_index=True)
             
-            # Email Notification Demo
+            # Email Notification
             if email_from and email_to:
-                st.info(f"📧 Email would be sent from {email_from} to {email_to} (Demo Mode)")
+                st.markdown(f"""
+                <div class="info-box">
+                    📧 <b>NOTIFICATION STATUS:</b><br>
+                    Results would be sent from <b>{email_from}</b> to <b>{email_to}</b><br>
+                    <i>(Email functionality in demo mode)</i>
+                </div>
+                """, unsafe_allow_html=True)
             
-            # Download Options
+            # Export Options
             st.markdown("---")
-            st.markdown("### 📥 Download Data")
+            st.markdown("### 💾 EXPORT OPTIONS")
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 csv_data = specs_df.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label="📄 Download CSV",
+                    label="📄 EXPORT CSV",
                     data=csv_data,
-                    file_name=f"sku_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    file_name=f"extraction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
@@ -603,49 +755,48 @@ if st.session_state.scraping_mode == 'single':
             with col2:
                 json_data = json.dumps(product_data, indent=2)
                 st.download_button(
-                    label="🔧 Download JSON",
+                    label="🔧 EXPORT JSON",
                     data=json_data,
-                    file_name=f"sku_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    file_name=f"extraction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                     mime="application/json",
                     use_container_width=True
                 )
             
             with col3:
-                # Excel would go here in real implementation
                 st.download_button(
-                    label="📊 Download Excel",
+                    label="📊 EXPORT EXCEL",
                     data=csv_data,
-                    file_name=f"sku_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                    file_name=f"extraction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                     mime="application/vnd.ms-excel",
                     use_container_width=True
                 )
 
 # ============================================================================
-# BULK UPLOAD MODE
+# BULK PROCESSING MODE
 # ============================================================================
 
 elif st.session_state.scraping_mode == 'bulk':
     
-    st.markdown("### 📁 Bulk Upload Scraping")
+    st.markdown('<p class="section-header">📦 BATCH PROCESSING</p>', unsafe_allow_html=True)
     
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     
-    # Info Box
+    # Format Information
     st.markdown("""
     <div class="info-box">
-        <b>📋 Required File Format:</b><br>
-        • Column 1: <b>RefNo</b> (Your reference number)<br>
-        • Column 2: <b>SKUSource</b> (Website name)<br>
-        • Column 3: <b>SKU Link</b> (Product URL)
+        <b>📋 REQUIRED FILE FORMAT:</b><br>
+        <b>Column 1:</b> RefNo (Reference Number/ID)<br>
+        <b>Column 2:</b> SKUSource (Platform Name)<br>
+        <b>Column 3:</b> SKU Link (Product URL)
     </div>
     """, unsafe_allow_html=True)
     
     # Template Download
-    with st.expander("📝 Download Template File"):
-        st.markdown("Use this template to prepare your bulk upload:")
+    with st.expander("📥 DOWNLOAD TEMPLATE"):
+        st.markdown("Standard batch processing template:")
         
         template_data = {
-            "RefNo": ["REF001", "REF002", "REF003"],
+            "RefNo": ["REF-2024-001", "REF-2024-002", "REF-2024-003"],
             "SKUSource": ["Amazon India", "Flipkart", "SKF India"],
             "SKU Link": [
                 "https://www.amazon.in/dp/B08XXXX1",
@@ -659,119 +810,109 @@ elif st.session_state.scraping_mode == 'bulk':
         
         template_csv = template_df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Download CSV Template",
+            label="📥 DOWNLOAD TEMPLATE",
             data=template_csv,
             file_name="sku_harvester_template.csv",
             mime="text/csv"
         )
     
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     # File Upload
-    st.markdown("#### 📤 Upload Your File")
+    st.markdown("#### 📤 FILE UPLOAD")
     uploaded_file = st.file_uploader(
-        "Choose CSV or Excel file",
+        "Select batch processing file",
         type=['csv', 'xlsx', 'xls'],
-        help="Upload file with RefNo, SKUSource, and SKU Link columns"
+        help="Upload CSV or Excel file with required columns"
     )
-    st.markdown('<p class="tooltip-text">Drag and drop or click to browse</p>', unsafe_allow_html=True)
+    st.markdown('<p class="tooltip-text">💡 Drag and drop or click to browse files</p>', unsafe_allow_html=True)
     
     if uploaded_file:
         try:
-            # Read file
             if uploaded_file.name.endswith('.csv'):
                 df = pd.read_csv(uploaded_file)
             else:
                 df = pd.read_excel(uploaded_file)
             
-            # Validate file structure
             is_valid, message = validate_bulk_upload(df)
             
             if not is_valid:
-                st.error(f"❌ {message}")
+                st.error(message)
                 df = None
             else:
-                st.success(f"✅ {message}")
+                st.success(message)
                 
-                # Auto-detect websites
-                df['Detected_Website'] = df['SKU Link'].apply(detect_website)
+                df['Detected_Platform'] = df['SKU Link'].apply(detect_website)
                 
-                # Show preview with validation
-                st.markdown("#### 📄 File Preview & Validation")
+                st.markdown("#### 🔍 FILE PREVIEW & VALIDATION")
                 st.dataframe(df.head(10), use_container_width=True)
                 
                 # Statistics
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("📊 Total Products", len(df))
+                    st.metric("📊 TOTAL ENTRIES", len(df))
                 with col2:
-                    valid_urls = len(df[df['Detected_Website'] != 'Unknown'])
-                    st.metric("✅ Valid URLs", valid_urls)
+                    valid = len(df[df['Detected_Platform'] != 'Unknown'])
+                    st.metric("✅ VALIDATED", valid)
                 with col3:
-                    invalid_urls = len(df[df['Detected_Website'] == 'Unknown'])
-                    st.metric("⚠️ Unknown URLs", invalid_urls)
+                    invalid = len(df[df['Detected_Platform'] == 'Unknown'])
+                    st.metric("⚠️ UNKNOWN", invalid)
                 
-                # Website breakdown
-                st.markdown("#### 🌐 Website Breakdown")
-                website_counts = df['Detected_Website'].value_counts()
+                # Platform Distribution
+                st.markdown("#### 🌐 PLATFORM DISTRIBUTION")
+                platform_counts = df['Detected_Platform'].value_counts()
                 
-                cols = st.columns(len(website_counts))
-                for idx, (website, count) in enumerate(website_counts.items()):
-                    with cols[idx]:
-                        icon = SUPPORTED_WEBSITES.get(website, {}).get('icon', '❓')
-                        st.metric(f"{icon} {website}", count)
+                cols = st.columns(min(len(platform_counts), 4))
+                for idx, (platform, count) in enumerate(platform_counts.items()):
+                    with cols[idx % 4]:
+                        icon = SUPPORTED_WEBSITES.get(platform, {}).get('icon', '❓')
+                        st.metric(f"{icon} {platform}", count)
         
         except Exception as e:
-            st.error(f"❌ Error reading file: {str(e)}")
+            st.error(f"❌ FILE ERROR: {str(e)}")
             df = None
     else:
         df = None
     
-    # Email Section
-    st.markdown("#### 📧 Email Results (Optional)")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Email Configuration
+    st.markdown("#### 📧 NOTIFICATION SETTINGS (Optional)")
     col1, col2 = st.columns(2)
     
     with col1:
-        bulk_email_from = st.text_input(
-            "From Email",
-            placeholder="sender@example.com",
-            key="bulk_from"
-        )
-    
+        bulk_email_from = st.text_input("Sender", placeholder="sender@company.com", key="bulk_from")
     with col2:
-        bulk_email_to = st.text_input(
-            "To Email",
-            placeholder="recipient@example.com",
-            key="bulk_to"
-        )
+        bulk_email_to = st.text_input("Recipient", placeholder="recipient@company.com", key="bulk_to")
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Scrape Button
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Execute Button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        bulk_scrape_btn = st.button(
-            "🚀 START BULK SCRAPING",
+        bulk_execute = st.button(
+            "⚡ EXECUTE BATCH PROCESSING",
             use_container_width=True,
             type="primary",
             disabled=(df is None)
         )
     
-    # Bulk Scraping Logic
-    if bulk_scrape_btn and df is not None:
+    if bulk_execute and df is not None:
         st.markdown("---")
-        st.markdown("### 🔄 Scraping Progress")
+        st.markdown("### ⚙️ BATCH PROCESSING STATUS")
         
         progress_bar = st.progress(0)
         status_text = st.empty()
-        current_product = st.empty()
+        current_item = st.empty()
         
         results = []
         
-        # Scrape each product
         for idx, row in df.iterrows():
-            current_product.info(f"📦 Scraping: {row['RefNo']} - {row['SKUSource']}")
-            status_text.text(f"Processing {idx + 1} of {len(df)}...")
+            current_item.info(f"⚙️ Processing: {row['RefNo']} | Platform: {row['SKUSource']}")
+            status_text.text(f"Progress: {idx + 1}/{len(df)} items")
             
-            # Scrape
             try:
                 product_data = scrape_product_demo(row['SKU Link'], row['SKUSource'])
                 product_data['RefNo'] = row['RefNo']
@@ -779,61 +920,64 @@ elif st.session_state.scraping_mode == 'bulk':
             except Exception as e:
                 results.append({
                     'RefNo': row['RefNo'],
-                    'status': 'Failed',
+                    'status': '❌ Failed',
                     'error': str(e)
                 })
             
             progress_bar.progress((idx + 1) / len(df))
         
-        current_product.empty()
-        status_text.text("✅ All products scraped successfully!")
+        current_item.empty()
+        status_text.text("✅ Batch processing completed")
         
-        # Update session state
         st.session_state.total_scraped += len(results)
         st.session_state.jobs_completed += 1
+        success_count = len([r for r in results if '✅' in r.get('status', '')])
+        st.session_state.success_rate = int((success_count / len(results)) * 100)
         
         st.markdown("---")
         
         # Results Summary
-        st.markdown("### 📊 Scraping Summary")
+        st.markdown("### 📊 PROCESSING SUMMARY")
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Total Processed", len(results))
+            st.metric("PROCESSED", len(results))
         with col2:
-            success_count = len([r for r in results if r.get('status') == 'Success'])
-            st.metric("Successful", success_count)
+            st.metric("SUCCESSFUL", success_count)
         with col3:
-            failed_count = len([r for r in results if r.get('status') == 'Failed'])
-            st.metric("Failed", failed_count)
+            failed = len(results) - success_count
+            st.metric("FAILED", failed)
         with col4:
-            success_rate = (success_count / len(results) * 100) if results else 0
-            st.metric("Success Rate", f"{success_rate:.1f}%")
+            rate = (success_count / len(results) * 100) if results else 0
+            st.metric("SUCCESS RATE", f"{rate:.1f}%")
         
         st.markdown("---")
         
         # Results Table
-        st.markdown("### 📋 Scraped Products")
-        
+        st.markdown("### 📋 EXTRACTION RESULTS")
         results_df = pd.DataFrame(results)
         st.dataframe(results_df, use_container_width=True, hide_index=True)
         
-        # Email notification demo
+        # Email Notification
         if bulk_email_from and bulk_email_to:
-            st.info(f"📧 Results would be emailed from {bulk_email_from} to {bulk_email_to} (Demo Mode)")
+            st.markdown(f"""
+            <div class="info-box">
+                📧 <b>NOTIFICATION:</b> Results would be sent from {bulk_email_from} to {bulk_email_to} (Demo Mode)
+            </div>
+            """, unsafe_allow_html=True)
         
-        # Download Results
+        # Export Options
         st.markdown("---")
-        st.markdown("### 📥 Download Results")
+        st.markdown("### 💾 EXPORT RESULTS")
         
         col1, col2 = st.columns(2)
         
         with col1:
             csv_results = results_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📄 Download Full Results (CSV)",
+                label="📄 EXPORT FULL RESULTS (CSV)",
                 data=csv_results,
-                file_name=f"bulk_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                file_name=f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
                 use_container_width=True
             )
@@ -841,9 +985,9 @@ elif st.session_state.scraping_mode == 'bulk':
         with col2:
             json_results = json.dumps(results, indent=2)
             st.download_button(
-                label="🔧 Download Full Results (JSON)",
+                label="🔧 EXPORT FULL RESULTS (JSON)",
                 data=json_results,
-                file_name=f"bulk_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                file_name=f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                 mime="application/json",
                 use_container_width=True
             )
@@ -856,13 +1000,15 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown("---")
 
 st.markdown("""
-<div style='text-align: center; color: #757575; padding: 2rem;'>
-    <p style='font-size: 0.9rem;'>⚠️ <b>Demo Version</b> - Currently showing placeholder data</p>
-    <p style='font-size: 0.85rem; margin-top: 0.5rem;'>
-        Provide sample product URLs from your target websites to enable real scraping functionality
+<div style='text-align: center; color: #546e7a; padding: 2rem; font-size: 0.85rem;'>
+    <p style='font-weight: 600; text-transform: uppercase; letter-spacing: 1px;'>⚠️ DEMO MODE ACTIVE</p>
+    <p style='margin-top: 0.5rem;'>
+        Current version displays placeholder data for demonstration purposes<br>
+        Provide sample product URLs to enable production-grade data extraction
     </p>
-    <p style='margin-top: 1.5rem; font-size: 0.85rem;'>
-        🌾 <b>SKU Harvester</b> v1.0 | Built with ❤️ using Streamlit | © 2024
+    <p style='margin-top: 1.5rem; font-size: 0.8rem; color: #78909c;'>
+        ⚙️ <b>SKU HARVESTER</b> v1.0.0 | Industrial-Grade Data Extraction Platform<br>
+        Built with precision engineering | © 2024 All Rights Reserved
     </p>
 </div>
 """, unsafe_allow_html=True)
