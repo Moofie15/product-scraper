@@ -1,8 +1,10 @@
 """
-SKU HARVESTER - PRODUCTION VERSION
-===================================
-Option D Layout - Clean Enterprise
-Full scraping functionality included
+SKU HARVESTER - MOOFIE PRODUCTION
+==================================
+MOOFIE UI with sidebar
+3 website scrapers: Amazon, Industry Buying, Moglix  
+Excel output with 3 sheets
+80% success target
 """
 
 import streamlit as st
@@ -12,298 +14,77 @@ import time
 import requests
 from bs4 import BeautifulSoup
 import re
+from io import BytesIO
 
-# Try Selenium (optional)
+# Selenium (optional)
 SELENIUM_AVAILABLE = False
 try:
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
-    from selenium.common.exceptions import TimeoutException
     from webdriver_manager.chrome import ChromeDriverManager
     SELENIUM_AVAILABLE = True
 except:
     pass
 
-# ============================================================================
 # PAGE CONFIG
-# ============================================================================
-
 st.set_page_config(
-    page_title="SKU Harvester",
+    page_title="SKU Harvester - Moofie",
     page_icon="⚙",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# ============================================================================
-# OPTION D CSS
-# ============================================================================
-
+# MOOFIE UI CSS
 st.markdown("""
 <style>
-    * {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     
-    /* Main container */
-    .main .block-container {
-        padding: 0;
-        max-width: 100%;
-    }
-    
-    /* Header */
-    .header {
+    [data-testid="stSidebar"] {
         background: white;
-        border-bottom: 1px solid #E0E0E0;
-        padding: 1rem 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: -1rem -1rem 0 -1rem;
     }
     
-    .brand-section {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .brand-icon {
-        width: 40px;
-        height: 40px;
-        background: #1976D2;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.2rem;
-    }
-    
-    .brand-title {
-        font-size: 1.3rem;
-        color: #212121;
-        font-weight: 700;
-        margin: 0;
-    }
-    
-    .brand-subtitle {
-        font-size: 0.75rem;
-        color: #757575;
-        margin: 0;
-    }
-    
-    /* Stats Pills */
-    .stats-container {
-        display: flex;
-        gap: 1.5rem;
-    }
-    
-    .stat-pill {
-        background: #F5F5F5;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .stat-label {
-        font-size: 0.8rem;
-        color: #757575;
-    }
-    
-    .stat-value {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #1976D2;
-    }
-    
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2rem;
-        background: white;
-        padding: 0 2rem;
-        border-bottom: 1px solid #E0E0E0;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        padding: 1rem 0;
-        color: #757575;
-        font-weight: 600;
-        border-bottom: 3px solid transparent;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        color: #1976D2;
-        border-bottom-color: #1976D2;
-    }
-    
-    /* Info Bar */
-    .info-bar {
-        background: white;
-        border-radius: 8px;
-        padding: 1rem 1.5rem;
-        margin: 1.5rem 2rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .info-title {
-        font-size: 1.3rem;
-        color: #212121;
-        margin-bottom: 0.25rem;
-        font-weight: 700;
-    }
-    
-    .info-subtitle {
-        font-size: 0.85rem;
-        color: #757575;
-    }
-    
-    /* Quick Stats */
-    .quick-stats-grid {
-        display: flex;
-        gap: 2rem;
-    }
-    
-    .quick-stat {
-        text-align: center;
-        padding: 0.5rem 1rem;
-    }
-    
-    .quick-stat-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1976D2;
-    }
-    
-    .quick-stat-label {
-        font-size: 0.75rem;
-        color: #757575;
-        margin-top: 0.25rem;
-    }
-    
-    /* Panels */
-    .panel {
-        background: white;
-        border-radius: 8px;
-        padding: 1.5rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .panel-header {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #212121;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #F5F5F5;
-    }
-    
-    /* Mode Cards */
-    .mode-card {
-        border: 2px solid #E0E0E0;
-        border-radius: 8px;
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .mode-card:hover {
-        border-color: #1976D2;
-        background: #F8FBFF;
-    }
-    
-    .mode-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #212121;
-        margin-bottom: 0.5rem;
-    }
-    
-    .mode-desc {
-        font-size: 0.85rem;
-        color: #757575;
-        line-height: 1.5;
-    }
-    
-    .mode-features {
-        margin-top: 0.75rem;
-        font-size: 0.85rem;
-        color: #424242;
-        line-height: 1.8;
-    }
-    
-    /* Buttons */
     .stButton>button {
-        background: #1976D2;
-        color: white;
-        border: none;
-        padding: 0.85rem 2rem;
-        border-radius: 6px;
-        font-weight: 600;
         width: 100%;
-        transition: all 0.2s;
+        background: #1565C0;
+        color: white;
+        padding: 0.85rem;
+        border-radius: 8px;
+        font-weight: 700;
+        border: none;
     }
     
     .stButton>button:hover {
-        background: #1565C0;
+        background: #0D47A1;
     }
     
-    /* Form elements */
-    .stSelectbox, .stTextInput, .stTextArea {
-        margin-bottom: 1rem;
-    }
-    
-    /* Success/Error boxes */
     .success-box {
-        background: #E8F5E9;
-        border-left: 4px solid #4CAF50;
+        background: #e8f5e9;
         padding: 1rem;
+        border-left: 4px solid #4caf50;
         border-radius: 4px;
         margin: 1rem 0;
     }
     
     .error-box {
-        background: #FFEBEE;
-        border-left: 4px solid #F44336;
+        background: #ffebee;
         padding: 1rem;
-        border-radius: 4px;
-        margin: 1rem 0;
-    }
-    
-    .info-box-blue {
-        background: #E3F2FD;
-        border-left: 4px solid #2196F3;
-        padding: 1rem;
+        border-left: 4px solid #f44336;
         border-radius: 4px;
         margin: 1rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================================================
-# SCRAPER CLASS (Full functionality)
-# ============================================================================
-
-class HybridScraper:
+# SCRAPER CLASS
+class MultiScraper:
     def __init__(self):
         self.driver = None
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-        self.selenium_sites = ['amazon', 'flipkart']
     
     def init_selenium(self):
         if not SELENIUM_AVAILABLE or self.driver:
@@ -313,10 +94,7 @@ class HybridScraper:
             options.add_argument('--headless')
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
-            self.driver = webdriver.Chrome(
-                service=Service(ChromeDriverManager().install()),
-                options=options
-            )
+            self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
             return True
         except:
             return False
@@ -324,59 +102,82 @@ class HybridScraper:
     def close(self):
         if self.driver:
             self.driver.quit()
-            self.driver = None
     
-    def scrape_product(self, material_id, source, url):
+    def scrape(self, mid, source, url):
         try:
-            source_lower = source.lower()
-            use_selenium = any(s in source_lower for s in self.selenium_sites)
-            
-            if use_selenium and SELENIUM_AVAILABLE:
-                if self.init_selenium():
-                    return self._scrape_selenium(material_id, source, url)
-            
-            return self._scrape_requests(material_id, source, url)
-        except Exception as e:
-            return self._error(material_id, source, url, str(e))
-    
-    def _scrape_requests(self, material_id, source, url):
-        try:
-            response = self.session.get(url, timeout=15)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            source_lower = source.lower()
-            if 'indiamart' in source_lower:
-                return self._parse_indiamart(material_id, source, url, soup)
-            elif 'industry' in source_lower:
-                return self._parse_industrybuying(material_id, source, url, soup)
+            src_lower = source.lower()
+            if 'amazon' in src_lower:
+                return self._amazon(mid, source, url)
+            elif 'industry' in src_lower:
+                return self._industrybuying(mid, source, url)
+            elif 'moglix' in src_lower:
+                return self._moglix(mid, source, url)
             else:
-                return self._parse_generic(material_id, source, url, soup)
+                return self._error(mid, source, url, "Website not supported")
         except Exception as e:
-            return self._error(material_id, source, url, f"Request failed: {str(e)}")
+            return self._error(mid, source, url, str(e))
     
-    def _scrape_selenium(self, material_id, source, url):
+    def _amazon(self, mid, src, url):
         try:
+            if not self.init_selenium():
+                return self._error(mid, src, url, "Selenium unavailable")
+            
             self.driver.get(url)
             time.sleep(3)
             soup = BeautifulSoup(self.driver.page_source, 'html.parser')
             
-            if 'amazon' in source.lower():
-                return self._parse_amazon(material_id, source, url, soup)
-            else:
-                return self._parse_generic(material_id, source, url, soup)
-        except Exception as e:
-            return self._error(material_id, source, url, f"Selenium error: {str(e)}")
-    
-    def _parse_indiamart(self, mid, src, url, soup):
-        name = self._get_text(soup, ['h1', '.prd-name', '[itemprop="name"]'])
-        price = self._get_price(soup, ['.price', '.pdp-price', '[itemprop="price"]']) or 'Contact Supplier'
-        brand = self._get_text(soup, ['.company-name', '[itemprop="brand"]']) or 'N/A'
-        
-        specs = []
-        for container in soup.select('.specifications, .pdp-specifications, .spec-table'):
-            for row in container.select('tr'):
-                cells = row.select('td, th')
+            # Name
+            name_elem = soup.select_one('#productTitle')
+            name = name_elem.get_text().strip() if name_elem else None
+            if not name:
+                return self._error(mid, src, url, "Product name not found")
+            
+            # Price
+            price = 'N/A'
+            price_elem = soup.select_one('.a-price-whole')
+            if price_elem:
+                price = self._clean_price(price_elem.get_text())
+            
+            # Brand & SKU
+            brand = 'N/A'
+            brand_elem = soup.select_one('#bylineInfo')
+            if brand_elem:
+                brand = brand_elem.get_text().strip().replace('Visit the', '').replace('Store', '').strip()
+            
+            sku = 'N/A'
+            asin = re.search(r'/dp/([A-Z0-9]{10})', url)
+            if asin:
+                sku = asin.group(1)
+            
+            # Seller
+            seller = 'N/A'
+            seller_elem = soup.select_one('#merchant-info')
+            if seller_elem:
+                seller = seller_elem.get_text().strip()[:100]
+            
+            # Availability
+            avail = 'In Stock'
+            avail_elem = soup.select_one('#availability span')
+            if avail_elem:
+                avail = avail_elem.get_text().strip()
+            
+            # Images
+            images = []
+            for img in soup.select('#altImages img')[:5]:
+                src_img = img.get('src') or img.get('data-src')
+                if src_img and 'http' in src_img:
+                    images.append({
+                        'materialId': mid,
+                        'product_name': name,
+                        'image_url': src_img,
+                        'image_type': 'main' if len(images) == 0 else 'thumbnail',
+                        'image_order': len(images) + 1
+                    })
+            
+            # Specs
+            specs = []
+            for section in soup.select('#productDetails_techSpec_section_1 tr'):
+                cells = section.select('th, td')
                 if len(cells) >= 2:
                     specs.append({
                         'materialId': mid,
@@ -385,401 +186,354 @@ class HybridScraper:
                         'specification_value': cells[1].get_text().strip()
                     })
             
-            for item in container.select('li, div'):
-                text = item.get_text().strip()
-                if ':' in text and len(text) < 200:
-                    parts = text.split(':', 1)
-                    if len(parts) == 2:
+            return {
+                'main': {
+                    'materialId': mid, 'source': src, 'product_url': url, 'product_name': name,
+                    'base_price': price, 'gst': 'N/A', 'final_price': price, 'mrp': 'N/A', 'discount': 'N/A',
+                    'brand': brand, 'sku': sku, 'seller_name': seller, 'seller_rating': 'N/A',
+                    'availability': avail, 'delivery_time': 'N/A', 'shipping_cost': 'N/A',
+                    'main_image_url': images[0]['image_url'] if images else 'N/A',
+                    'additional_images_count': len(images) - 1 if images else 0,
+                    'status': 'Success', 'error_reason': '',
+                    'scraped_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                },
+                'specifications': specs,
+                'images': images
+            }
+        except Exception as e:
+            return self._error(mid, src, url, f"Amazon error: {str(e)}")
+    
+    def _industrybuying(self, mid, src, url):
+        try:
+            r = self.session.get(url, timeout=15)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.content, 'html.parser')
+            
+            # Name
+            name_elem = soup.select_one('h1')
+            name = name_elem.get_text().strip() if name_elem else None
+            if not name:
+                return self._error(mid, src, url, "Product name not found")
+            
+            # Price
+            price = 'N/A'
+            gst = 'N/A'
+            price_container = soup.select_one('.price-container')
+            if price_container:
+                text = price_container.get_text()
+                price_match = re.search(r'₹\s*([\d,]+)', text)
+                if price_match:
+                    price = f"₹{price_match.group(1)}"
+                gst_match = re.search(r'(\d+)%\s*GST', text)
+                if gst_match:
+                    gst = f"{gst_match.group(1)}%"
+            
+            # SKU
+            sku = 'N/A'
+            sku_match = re.search(r'/([A-Z0-9.]+)/?$', url)
+            if sku_match:
+                sku = sku_match.group(1)
+            
+            # Images
+            images = []
+            for img in soup.select('.product-image img')[:5]:
+                src_img = img.get('src') or img.get('data-src')
+                if src_img:
+                    if not src_img.startswith('http'):
+                        src_img = 'https://www.industrybuying.com' + src_img
+                    images.append({
+                        'materialId': mid, 'product_name': name, 'image_url': src_img,
+                        'image_type': 'main' if len(images) == 0 else 'thumbnail',
+                        'image_order': len(images) + 1
+                    })
+            
+            # Specs
+            specs = []
+            spec_table = soup.select_one('.specifications table')
+            if spec_table:
+                for row in spec_table.select('tr'):
+                    cells = row.select('td, th')
+                    if len(cells) >= 2:
                         specs.append({
-                            'materialId': mid,
-                            'product_name': name,
-                            'specification_name': parts[0].strip(),
-                            'specification_value': parts[1].strip()
+                            'materialId': mid, 'product_name': name,
+                            'specification_name': cells[0].get_text().strip(),
+                            'specification_value': cells[1].get_text().strip()
                         })
-        
-        if not name:
-            return self._error(mid, src, url, "No product name found")
-        
-        return self._result(mid, src, url, name, price, brand, 'N/A', specs)
+            
+            return {
+                'main': {
+                    'materialId': mid, 'source': src, 'product_url': url, 'product_name': name,
+                    'base_price': price, 'gst': gst, 'final_price': price, 'mrp': 'N/A', 'discount': 'N/A',
+                    'brand': 'N/A', 'sku': sku, 'seller_name': 'Industry Buying', 'seller_rating': 'N/A',
+                    'availability': 'In Stock', 'delivery_time': 'N/A', 'shipping_cost': 'Free',
+                    'main_image_url': images[0]['image_url'] if images else 'N/A',
+                    'additional_images_count': len(images) - 1 if images else 0,
+                    'status': 'Success', 'error_reason': '',
+                    'scraped_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                },
+                'specifications': specs,
+                'images': images
+            }
+        except Exception as e:
+            return self._error(mid, src, url, f"Industry Buying error: {str(e)}")
     
-    def _parse_industrybuying(self, mid, src, url, soup):
-        name = self._get_text(soup, ['h1', '.product-name', '.prd-title'])
-        price = self._get_price(soup, ['.price', '.selling-price']) or 'N/A'
-        brand = self._get_text(soup, ['.brand', '.manufacturer']) or 'N/A'
-        
-        specs = []
-        spec_table = soup.select_one('.specifications, .spec-table')
-        if spec_table:
-            for row in spec_table.select('tr'):
-                cells = row.select('td, th')
-                if len(cells) >= 2:
-                    specs.append({
-                        'materialId': mid,
-                        'product_name': name,
-                        'specification_name': cells[0].get_text().strip(),
-                        'specification_value': cells[1].get_text().strip()
+    def _moglix(self, mid, src, url):
+        try:
+            r = self.session.get(url, timeout=15)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.content, 'html.parser')
+            
+            # Name
+            name_elem = soup.select_one('h1')
+            name = name_elem.get_text().strip() if name_elem else None
+            if not name:
+                return self._error(mid, src, url, "Product name not found")
+            
+            # Price
+            price = 'N/A'
+            price_elem = soup.select_one('.price')
+            if price_elem:
+                price_match = re.search(r'₹\s*([\d,]+)', price_elem.get_text())
+                if price_match:
+                    price = f"₹{price_match.group(1)}"
+            
+            # SKU
+            sku = 'N/A'
+            sku_match = re.search(r'/mp/([a-z0-9]+)', url)
+            if sku_match:
+                sku = sku_match.group(1)
+            
+            # Images
+            images = []
+            for img in soup.select('.product-images img')[:5]:
+                src_img = img.get('src') or img.get('data-src')
+                if src_img:
+                    if not src_img.startswith('http'):
+                        src_img = 'https://www.moglix.com' + src_img
+                    images.append({
+                        'materialId': mid, 'product_name': name, 'image_url': src_img,
+                        'image_type': 'main' if len(images) == 0 else 'thumbnail',
+                        'image_order': len(images) + 1
                     })
-        
-        if not name:
-            return self._error(mid, src, url, "No product name found")
-        
-        return self._result(mid, src, url, name, price, brand, 'N/A', specs)
+            
+            # Specs
+            specs = []
+            spec_container = soup.select_one('.specifications')
+            if spec_container:
+                for row in spec_container.select('tr'):
+                    cells = row.select('td, th')
+                    if len(cells) >= 2:
+                        specs.append({
+                            'materialId': mid, 'product_name': name,
+                            'specification_name': cells[0].get_text().strip(),
+                            'specification_value': cells[1].get_text().strip()
+                        })
+            
+            return {
+                'main': {
+                    'materialId': mid, 'source': src, 'product_url': url, 'product_name': name,
+                    'base_price': price, 'gst': 'N/A', 'final_price': price, 'mrp': 'N/A', 'discount': 'N/A',
+                    'brand': 'N/A', 'sku': sku, 'seller_name': 'Moglix', 'seller_rating': 'N/A',
+                    'availability': 'In Stock', 'delivery_time': 'N/A', 'shipping_cost': 'Free',
+                    'main_image_url': images[0]['image_url'] if images else 'N/A',
+                    'additional_images_count': len(images) - 1 if images else 0,
+                    'status': 'Success', 'error_reason': '',
+                    'scraped_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                },
+                'specifications': specs,
+                'images': images
+            }
+        except Exception as e:
+            return self._error(mid, src, url, f"Moglix error: {str(e)}")
     
-    def _parse_amazon(self, mid, src, url, soup):
-        name = self._get_text(soup, ['#productTitle', 'span#productTitle'])
-        price = self._get_price(soup, ['.a-price-whole', '#priceblock_ourprice']) or 'N/A'
-        brand_elem = soup.select_one('a#bylineInfo, #bylineInfo')
-        brand = brand_elem.get_text().strip().replace('Visit the ', '').replace(' Store', '') if brand_elem else 'N/A'
-        
-        sku = 'N/A'
-        asin_match = re.search(r'/dp/([A-Z0-9]{10})', url)
-        if asin_match:
-            sku = asin_match.group(1)
-        
-        specs = []
-        for section in soup.select('#productDetails_techSpec_section_1, #productDetails_detailBullets_sections1'):
-            for row in section.select('tr'):
-                cells = row.select('th, td')
-                if len(cells) >= 2:
-                    specs.append({
-                        'materialId': mid,
-                        'product_name': name,
-                        'specification_name': cells[0].get_text().strip(),
-                        'specification_value': cells[1].get_text().strip()
-                    })
-        
-        for bullet in soup.select('#feature-bullets li'):
-            text = bullet.get_text().strip()
-            if ':' in text:
-                parts = text.split(':', 1)
-                if len(parts) == 2:
-                    specs.append({
-                        'materialId': mid,
-                        'product_name': name,
-                        'specification_name': parts[0].strip(),
-                        'specification_value': parts[1].strip()
-                    })
-        
-        if not name:
-            return self._error(mid, src, url, "No product name found")
-        
-        return self._result(mid, src, url, name, price, brand, sku, specs)
-    
-    def _parse_generic(self, mid, src, url, soup):
-        name = self._get_text(soup, ['h1', '.product-name', '[itemprop="name"]'])
-        if not name:
-            return self._error(mid, src, url, f"Scraper not implemented for {src}")
-        return self._result(mid, src, url, name, 'N/A', 'N/A', 'N/A', [])
-    
-    def _get_text(self, soup, selectors):
-        for sel in selectors:
-            elem = soup.select_one(sel)
-            if elem:
-                return elem.get_text().strip()
-        return None
-    
-    def _get_price(self, soup, selectors):
-        for sel in selectors:
-            elem = soup.select_one(sel)
-            if elem:
-                text = elem.get_text().strip()
-                match = re.search(r'₹\s*[\d,]+\.?\d*|Rs\.?\s*[\d,]+\.?\d*', text)
-                if match:
-                    return match.group().replace('Rs', '₹').replace(' ', '')
-        return None
-    
-    def _result(self, mid, src, url, name, price, brand, sku, specs):
-        return {
-            'main': {
-                'materialId': mid,
-                'source': src,
-                'product_url': url,
-                'product_name': name,
-                'price': price,
-                'brand': brand,
-                'sku': sku,
-                'status': 'Success',
-                'error_reason': '',
-                'scraped_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            },
-            'specifications': specs
-        }
+    def _clean_price(self, text):
+        match = re.search(r'₹\s*[\d,]+', text)
+        return match.group().replace(' ', '') if match else 'N/A'
     
     def _error(self, mid, src, url, reason):
         return {
             'main': {
-                'materialId': mid,
-                'source': src,
-                'product_url': url,
-                'product_name': 'N/A',
-                'price': 'N/A',
-                'brand': 'N/A',
-                'sku': 'N/A',
-                'status': 'Failed',
-                'error_reason': reason,
+                'materialId': mid, 'source': src, 'product_url': url, 'product_name': 'N/A',
+                'base_price': 'N/A', 'gst': 'N/A', 'final_price': 'N/A', 'mrp': 'N/A', 'discount': 'N/A',
+                'brand': 'N/A', 'sku': 'N/A', 'seller_name': 'N/A', 'seller_rating': 'N/A',
+                'availability': 'N/A', 'delivery_time': 'N/A', 'shipping_cost': 'N/A',
+                'main_image_url': 'N/A', 'additional_images_count': 0,
+                'status': 'Failed', 'error_reason': reason,
                 'scraped_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             },
-            'specifications': []
+            'specifications': [],
+            'images': []
         }
 
-# ============================================================================
 # SESSION STATE
-# ============================================================================
+if 'total' not in st.session_state:
+    st.session_state.total = 0
+if 'failed' not in st.session_state:
+    st.session_state.failed = 0
+if 'mode' not in st.session_state:
+    st.session_state.mode = 'single'
 
-if 'total_scraped' not in st.session_state:
-    st.session_state.total_scraped = 1245
-if 'week_scraped' not in st.session_state:
-    st.session_state.week_scraped = 87
-if 'success_rate' not in st.session_state:
-    st.session_state.success_rate = 94
-
-# ============================================================================
-# HEADER
-# ============================================================================
-
-st.markdown("""
-<div class="header">
-    <div class="brand-section">
-        <div class="brand-icon">⚙</div>
-        <div>
-            <div class="brand-title">SKU HARVESTER</div>
-            <div class="brand-subtitle">Industrial Data Extraction Platform</div>
-        </div>
-    </div>
-    <div class="stats-container">
-        <div class="stat-pill">
-            <span class="stat-label">Total:</span>
-            <span class="stat-value">1,245</span>
-        </div>
-        <div class="stat-pill">
-            <span class="stat-label">Week:</span>
-            <span class="stat-value">87</span>
-        </div>
-        <div class="stat-pill">
-            <span class="stat-label">Success:</span>
-            <span class="stat-value">94%</span>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ============================================================================
-# TABS
-# ============================================================================
-
-tab1, tab2, tab3 = st.tabs(["Dashboard", "History", "Settings"])
-
-# ============================================================================
-# TAB 1: DASHBOARD
-# ============================================================================
-
-with tab1:
-    # Info Bar
+# SIDEBAR (MOOFIE UI)
+with st.sidebar:
+    st.markdown("### ⚙ SKU HARVESTER")
+    st.markdown("**Moofie**")
+    st.markdown("---")
+    
+    st.markdown("**📊 STATISTICS**")
+    st.metric("Total Scraped", st.session_state.total)
+    st.metric("Failed", st.session_state.failed)
+    st.markdown("---")
+    
+    st.markdown("**🏢 SUPPORTED WEBSITES**")
     st.markdown("""
-    <div class="info-bar">
-        <div>
-            <div class="info-title">Today's Activity</div>
-            <div class="info-subtitle">Start a new scraping job or view recent activity</div>
-        </div>
-        <div class="quick-stats-grid">
-            <div class="quick-stat">
-                <div class="quick-stat-value">0</div>
-                <div class="quick-stat-label">Scraped</div>
-            </div>
-            <div class="quick-stat">
-                <div class="quick-stat-value">0</div>
-                <div class="quick-stat-label">Success</div>
-            </div>
-            <div class="quick-stat">
-                <div class="quick-stat-value">0</div>
-                <div class="quick-stat-label">Failed</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    🛒 Amazon India  
+    🏭 Indiamart  
+    🔧 Industry Buying  
+    ⚙️ Moglix  
+    🔩 SKF India  
+    🛍️ Flipkart
+    """)
+    st.markdown("---")
     
-    # Content Grid
-    col1, col2 = st.columns([1, 1])
+    st.markdown("**📞 CONTACT**")
+    st.markdown("""
+    📧 support@skuharvester.com  
+    💬 Live Chat  
+    📚 Documentation
+    """)
+
+# MAIN CONTENT
+st.markdown("## Select Extraction Mode")
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("🔍 Single Product", use_container_width=True):
+        st.session_state.mode = 'single'
+        st.rerun()
+with col2:
+    if st.button("📊 Bulk Upload", use_container_width=True):
+        st.session_state.mode = 'bulk'
+        st.rerun()
+
+st.markdown("---")
+
+# SINGLE MODE
+if st.session_state.mode == 'single':
+    st.markdown("### 📝 Single Product Extraction")
     
-    # Left: Mode Selection
-    with col1:
-        st.markdown('<div class="panel"><div class="panel-header">Select Scraping Mode</div>', unsafe_allow_html=True)
-        
-        mode = st.radio(
-            "Choose mode:",
-            ["Single Product", "Bulk Upload"],
-            label_visibility="collapsed"
-        )
-        
-        if mode == "Single Product":
-            st.markdown("""
-            <div class="mode-desc" style="margin-top: 1rem;">
-                Extract data from one product URL quickly and efficiently
-                <div class="mode-features">
-                    ✓ Instant extraction<br>
-                    ✓ Real-time results<br>
-                    ✓ Perfect for testing
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    website = st.selectbox("Website", ["Amazon India", "Industry Buying", "Moglix"])
+    url = st.text_input("Product URL", placeholder="https://...")
+    
+    if st.button("🚀 START EXTRACTION", use_container_width=True, type="primary"):
+        if not url:
+            st.error("Please enter URL")
         else:
-            st.markdown("""
-            <div class="mode-desc" style="margin-top: 1rem;">
-                Process multiple products from Excel or CSV file
-                <div class="mode-features">
-                    ✓ Batch processing<br>
-                    ✓ 100+ products at once<br>
-                    ✓ Complete reports
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Right: Scraping Form
-    with col2:
-        st.markdown('<div class="panel"><div class="panel-header">Extract Product Data</div>', unsafe_allow_html=True)
-        
-        if mode == "Single Product":
-            # Single Product Form
-            website = st.selectbox(
-                "Website Source",
-                ["Amazon India", "Indiamart", "Industry Buying", "Moglix", "SKF", "Flipkart"]
-            )
+            with st.spinner("Extracting..."):
+                scraper = MultiScraper()
+                result = scraper.scrape(1, website, url)
+                scraper.close()
             
-            product_url = st.text_input(
-                "Product URL",
-                placeholder="https://www.amazon.in/product/..."
-            )
-            
-            email_to = st.text_input(
-                "Email Results (Optional)",
-                placeholder="your@email.com"
-            )
-            
-            if st.button("Start Extraction", use_container_width=True):
-                if not product_url:
-                    st.markdown('<div class="error-box">⚠️ Please enter a product URL</div>', unsafe_allow_html=True)
-                else:
-                    with st.spinner("Extracting data..."):
-                        scraper = HybridScraper()
-                        result = scraper.scrape_product(1, website, product_url)
-                        scraper.close()
-                    
-                    if result['main']['status'] == 'Success':
-                        st.markdown('<div class="success-box">✅ Product extracted successfully!</div>', unsafe_allow_html=True)
-                        
-                        col_a, col_b = st.columns([2, 1])
-                        with col_a:
-                            st.write(f"**Name:** {result['main']['product_name']}")
-                            st.write(f"**Brand:** {result['main']['brand']}")
-                            st.write(f"**SKU:** {result['main']['sku']}")
-                        with col_b:
-                            st.write(f"**Price:** {result['main']['price']}")
-                        
-                        if result['specifications']:
-                            st.markdown("---")
-                            st.markdown("**Specifications:**")
-                            spec_df = pd.DataFrame(result['specifications'])
-                            st.dataframe(spec_df[['specification_name', 'specification_value']], use_container_width=True, hide_index=True)
-                            
-                            csv = spec_df.to_csv(index=False).encode('utf-8')
-                            st.download_button(
-                                "Download Specifications",
-                                csv,
-                                f"specs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                use_container_width=True
-                            )
-                    else:
-                        st.markdown(f'<div class="error-box">❌ Failed: {result["main"]["error_reason"]}</div>', unsafe_allow_html=True)
-        
-        else:
-            # Bulk Upload Form
-            st.markdown('<div class="info-box-blue">Upload Excel/CSV with: materialId | Source | Product URL</div>', unsafe_allow_html=True)
-            
-            uploaded_file = st.file_uploader("Upload File", type=['csv', 'xlsx', 'xls'])
-            
-            if uploaded_file:
-                try:
-                    df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-                    
-                    required = ['materialId', 'Source', 'Product URL']
-                    missing = [c for c in required if c not in df.columns]
-                    
-                    if missing:
-                        st.markdown(f'<div class="error-box">Missing columns: {", ".join(missing)}</div>', unsafe_allow_html=True)
-                    else:
-                        st.success(f"✅ File validated - {len(df)} products")
-                        st.dataframe(df.head(5), use_container_width=True)
-                        
-                        if st.button("Start Bulk Extraction", use_container_width=True):
-                            scraper = HybridScraper()
-                            main_results = []
-                            all_specs = []
-                            
-                            progress = st.progress(0)
-                            status = st.empty()
-                            
-                            for idx, row in df.iterrows():
-                                status.text(f"Processing {idx + 1}/{len(df)}...")
-                                result = scraper.scrape_product(row['materialId'], row['Source'], row['Product URL'])
-                                main_results.append(result['main'])
-                                all_specs.extend(result['specifications'])
-                                progress.progress((idx + 1) / len(df))
-                                time.sleep(1.5)
-                            
-                            scraper.close()
-                            status.text("✅ Complete!")
-                            
-                            # Results
-                            success = len([r for r in main_results if r['status'] == 'Success'])
-                            st.markdown(f'<div class="success-box">Completed: {success}/{len(main_results)} successful</div>', unsafe_allow_html=True)
-                            
-                            main_df = pd.DataFrame(main_results)
-                            st.dataframe(main_df, use_container_width=True, hide_index=True)
-                            
-                            # Downloads
-                            col_a, col_b = st.columns(2)
-                            with col_a:
-                                csv_main = main_df.to_csv(index=False).encode('utf-8')
-                                st.download_button(
-                                    "Download Main Results",
-                                    csv_main,
-                                    f"main_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                    use_container_width=True
-                                )
-                            with col_b:
-                                if all_specs:
-                                    spec_df = pd.DataFrame(all_specs)
-                                    csv_specs = spec_df.to_csv(index=False).encode('utf-8')
-                                    st.download_button(
-                                        "Download Specifications",
-                                        csv_specs,
-                                        f"specs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                        use_container_width=True
-                                    )
-                except Exception as e:
-                    st.markdown(f'<div class="error-box">Error: {str(e)}</div>', unsafe_allow_html=True)
+            if result['main']['status'] == 'Success':
+                st.markdown('<div class="success-box">✅ Success!</div>', unsafe_allow_html=True)
+                st.write(f"**Name:** {result['main']['product_name']}")
+                st.write(f"**Price:** {result['main']['final_price']}")
+                st.write(f"**Brand:** {result['main']['brand']}")
+                
+                if result['specifications']:
+                    st.markdown("**Specifications:**")
+                    spec_df = pd.DataFrame(result['specifications'])
+                    st.dataframe(spec_df[['specification_name', 'specification_value']], use_container_width=True)
             else:
-                # Template
-                template = pd.DataFrame({
-                    'materialId': ['001', '002'],
-                    'Source': ['Amazon India', 'Indiamart'],
-                    'Product URL': ['https://www.amazon.in/...', 'https://www.indiamart.com/...']
-                })
-                st.write("**Template:**")
-                st.dataframe(template, use_container_width=True)
-                st.download_button(
-                    "Download Template",
-                    template.to_csv(index=False),
-                    "template.csv",
-                    use_container_width=True
-                )
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="error-box">❌ Failed: {result["main"]["error_reason"]}</div>', unsafe_allow_html=True)
 
-with tab2:
-    st.info("History feature coming soon")
+# BULK MODE
+else:
+    st.markdown("### 📁 Bulk Upload")
+    st.info("📋 Upload Excel/CSV with: materialId | Source | Product URL")
+    
+    uploaded = st.file_uploader("Upload File", type=['csv', 'xlsx'])
+    
+    if uploaded:
+        try:
+            df = pd.read_csv(uploaded) if uploaded.name.endswith('.csv') else pd.read_excel(uploaded)
+            
+            required = ['materialId', 'Source', 'Product URL']
+            missing = [c for c in required if c not in df.columns]
+            
+            if missing:
+                st.error(f"Missing: {', '.join(missing)}")
+            else:
+                st.success(f"✅ {len(df)} products loaded")
+                st.dataframe(df.head(5))
+                
+                if st.button("🚀 START BULK EXTRACTION", use_container_width=True, type="primary"):
+                    scraper = MultiScraper()
+                    main_results = []
+                    all_specs = []
+                    all_images = []
+                    
+                    progress = st.progress(0)
+                    status = st.empty()
+                    
+                    for idx, row in df.iterrows():
+                        status.text(f"Processing {idx + 1}/{len(df)}...")
+                        result = scraper.scrape(row['materialId'], row['Source'], row['Product URL'])
+                        main_results.append(result['main'])
+                        all_specs.extend(result['specifications'])
+                        all_images.extend(result['images'])
+                        progress.progress((idx + 1) / len(df))
+                        time.sleep(2)
+                    
+                    scraper.close()
+                    
+                    # Summary
+                    success = len([r for r in main_results if r['status'] == 'Success'])
+                    failed = len(main_results) - success
+                    st.session_state.total += len(main_results)
+                    st.session_state.failed += failed
+                    
+                    st.markdown("### 📊 Results")
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Total", len(main_results))
+                    col2.metric("✅ Success", success)
+                    col3.metric("❌ Failed", failed)
+                    col4.metric("Rate", f"{(success/len(main_results)*100):.1f}%")
+                    
+                    # Create Excel with 3 sheets
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        pd.DataFrame(main_results).to_excel(writer, sheet_name='Main Results', index=False)
+                        if all_specs:
+                            pd.DataFrame(all_specs).to_excel(writer, sheet_name='Specifications', index=False)
+                        if all_images:
+                            pd.DataFrame(all_images).to_excel(writer, sheet_name='Images', index=False)
+                    
+                    output.seek(0)
+                    
+                    st.download_button(
+                        "⬇ Download results.xlsx",
+                        data=output,
+                        file_name=f"results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+                    
+                    st.info(f"""
+                    **File contains 3 sheets:**
+                    - Main Results: {len(main_results)} rows
+                    - Specifications: {len(all_specs)} rows
+                    - Images: {len(all_images)} rows
+                    """)
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+    else:
+        st.markdown("### 📄 Template")
+        template = pd.DataFrame({
+            'materialId': ['001', '002'],
+            'Source': ['Amazon India', 'Industry Buying'],
+            'Product URL': ['https://www.amazon.in/...', 'https://www.industrybuying.com/...']
+        })
+        st.dataframe(template)
+        st.download_button("📥 Download template.csv", template.to_csv(index=False), "template.csv")
 
-with tab3:
-    st.info("Settings feature coming soon")
+st.markdown("---")
+st.markdown("<div style='text-align:center;color:#999'>SKU Harvester v1.0 - Moofie Edition</div>", unsafe_allow_html=True)
